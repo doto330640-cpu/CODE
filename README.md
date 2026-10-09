@@ -10,6 +10,9 @@
 | `lectures/` | 강의안, 세미나 발표 자료 (주제별 폴더) |
 | `proposals/` | 운영·코스·식음 위탁 제안서 (골프장별 폴더) |
 | `articles/` | 골프코스세미나 기사·칼럼 원고 |
+| `drafts/gpt/` | GPT로 만든 1차 초안 (작업 절차: `drafts/README.md`) |
+| `images/html/` | 슬라이드·도식 원본 (HTML) |
+| `tools/render.mjs` | HTML → 고해상도 PNG 변환 |
 | `images/prompts/` | 이미지 생성용 프롬프트 모음 |
 | `images/generated/` | 생성한 이미지 결과물 |
 | `images/source/` | 직접 촬영한 코스 사진 등 원본 자료 |

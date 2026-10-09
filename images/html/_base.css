@@ -1,0 +1,35 @@
+/* 슬라이드 공통 스타일 — 색상과 글꼴은 brand/README.md 기준 */
+@font-face { font-family: 'Pretendard'; font-weight: 400; src: url('../../brand/fonts/Pretendard-Regular.otf'); }
+@font-face { font-family: 'Pretendard'; font-weight: 500; src: url('../../brand/fonts/Pretendard-Medium.otf'); }
+@font-face { font-family: 'Pretendard'; font-weight: 600; src: url('../../brand/fonts/Pretendard-SemiBold.otf'); }
+@font-face { font-family: 'Pretendard'; font-weight: 700; src: url('../../brand/fonts/Pretendard-Bold.otf'); }
+@font-face { font-family: 'Pretendard'; font-weight: 800; src: url('../../brand/fonts/Pretendard-ExtraBold.otf'); }
+
+:root {
+  --green: #1F5C3A;
+  --fairway: #6FA35B;
+  --sand: #E8DCC0;
+  --sand-light: #F6F1E6;
+  --charcoal: #2B2B2B;
+  --gray: #7A7A72;
+  --line: #DDD5C2;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; }
+body {
+  font-family: 'Pretendard', sans-serif;
+  color: var(--charcoal);
+  background: #FFFFFF;
+  word-break: keep-all;
+}
+.slide { position: relative; width: 1920px; height: 1080px; padding: 80px 110px 70px; }
+.eyebrow { font-size: 26px; font-weight: 600; color: var(--fairway); letter-spacing: 0.04em; }
+h1 { font-size: 60px; font-weight: 800; color: var(--green); margin-top: 10px; letter-spacing: -0.02em; }
+.lead { font-size: 28px; color: var(--gray); margin-top: 14px; }
+.footer {
+  position: absolute; left: 110px; right: 110px; bottom: 44px;
+  display: flex; justify-content: space-between;
+  font-size: 20px; color: var(--gray);
+  border-top: 2px solid var(--line); padding-top: 16px;
+}

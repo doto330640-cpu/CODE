@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>연간 코스관리 공정표</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .chart { margin-top: 44px; display: grid; grid-template-columns: 330px repeat(12, 1fr); }
+  .head { font-size: 22px; font-weight: 700; color: var(--gray); text-align: center; padding-bottom: 12px; border-bottom: 3px solid var(--green); }
+  .head.season { font-size: 20px; font-weight: 600; padding-bottom: 6px; border-bottom: none; }
+  .spring { color: #6FA35B; } .summer { color: #C0782E; } .fall { color: #A0522D; } .winter { color: #5A7A99; }
+  .label { font-size: 25px; font-weight: 600; padding: 0 18px 0 0; height: 66px; display: flex; align-items: center; border-bottom: 1px solid var(--line); }
+  .label small { display: block; font-size: 18px; font-weight: 400; color: var(--gray); margin-top: 2px; }
+  .cell { height: 66px; border-bottom: 1px solid var(--line); border-left: 1px solid #EFEAE0; position: relative; }
+  .cell.alt { background: var(--sand-light); }
+  .bar { position: absolute; top: 17px; height: 32px; border-radius: 16px; display: flex; align-items: center; padding-left: 16px; font-size: 18px; font-weight: 600; color: #fff; white-space: nowrap; z-index: 2; }
+  .main { background: var(--green); }
+  .sub { background: var(--fairway); }
+  .light { background: var(--sand); color: var(--charcoal); }
+  .warn { background: #C0782E; }
+  .legend { display: flex; gap: 34px; margin-top: 26px; font-size: 21px; color: var(--gray); }
+  .legend span::before { content: ''; display: inline-block; width: 34px; height: 16px; border-radius: 8px; margin-right: 10px; vertical-align: -1px; }
+  .lg-main::before { background: var(--green); } .lg-sub::before { background: var(--fairway); }
+  .lg-light::before { background: var(--sand); } .lg-warn::before { background: #C0782E; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="eyebrow">코스위탁 운영계획 · 한지형 잔디 그린 기준</div>
+  <h1>연간 코스관리 공정표</h1>
+  <div class="lead">잔디 생육 주기에 맞춰 집중 작업은 봄·가을에, 여름에는 스트레스 관리에 집중합니다.</div>
+
+  <div class="chart" id="chart"></div>
+  <div class="legend">
+    <span class="lg-main">집중 작업</span>
+    <span class="lg-sub">정기 작업</span>
+    <span class="lg-light">보조·점검</span>
+    <span class="lg-warn">고온기 특별관리</span>
+  </div>
+
+  <div class="footer">
+    <span>※ 예시 일정입니다. 지역 기후, 초종, 내장객 일정에 따라 골프장별로 조정합니다.</span>
+    <span>골프코스 위탁관리 제안</span>
+  </div>
+</div>
+
+<script>
+  // [작업명, 설명, [[시작월, 끝월, 종류, 막대 문구], ...]]
+  const rows = [
+    ['통기작업 (코어링)', '그린·티 갱신', [[3.5, 4.6, 'main', '봄 코어링'], [9.1, 10.2, 'main', '가을 코어링']]],
+    ['배토 (모래 뿌리기)', '표면 평탄화', [[3, 11, 'sub', '2~3주 간격 정기 배토']]],
+    ['시비 (비료)', '생육기 영양 공급', [[3, 5.5, 'main', '봄 시비'], [6, 8.9, 'light', '저량 시비'], [9, 11, 'main', '가을 시비']]],
+    ['병해 예방 방제', '동전마름병·갈색퍼짐병', [[5, 9.9, 'sub', '예방 위주 정기 방제']]],
+    ['고온기 스트레스 관리', '시린지·관수·예고 상향', [[6.3, 9, 'warn', '여름철 특별관리']]],
+    ['잡초 방제', '발아 전 처리', [[3, 4.4, 'sub', '봄 처리'], [8.7, 9.9, 'sub', '가을 처리']]],
+    ['보파 (씨 뿌리기)', '손상 부위 회복', [[9, 10.4, 'main', '가을 보파']]],
+    ['동계 관리', '동해 방지·장비 정비', [[1, 2.9, 'light', '장비 정비·교육'], [11.6, 12.99, 'light', '동해 방지']]],
+  ];
+
+  const chart = document.getElementById('chart');
+  const add = (cls, html = '') => { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; chart.appendChild(d); return d; };
+
+  const seasons = ['winter','winter','spring','spring','spring','summer','summer','summer','fall','fall','fall','winter'];
+  const seasonName = { spring: '봄', summer: '여름', fall: '가을', winter: '겨울' };
+  add('head season', '');
+  seasons.forEach((s, i) => add(`head season ${s}`, (i === 0 || seasons[i - 1] !== s) ? seasonName[s] : ''));
+  add('head', '');
+  for (let m = 1; m <= 12; m++) add('head', `${m}월`);
+
+  rows.forEach(([name, desc, bars], r) => {
+    add('label', `<div>${name}<small>${desc}</small></div>`);
+    const cells = [];
+    for (let m = 1; m <= 12; m++) cells.push(add('cell' + (r % 2 ? ' alt' : '')));
+    bars.forEach(([start, end, kind, text]) => {
+      const first = cells[Math.floor(start) - 1];
+      const bar = document.createElement('div');
+      bar.className = `bar ${kind}`;
+      bar.textContent = text;
+      const w = first.getBoundingClientRect().width;
+      bar.style.left = `${(start - Math.floor(start)) * w}px`;
+      bar.style.width = `${(end - start) * w}px`;
+      first.appendChild(bar);
+    });
+  });
+</script>
+</body>
+</html>

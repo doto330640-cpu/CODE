@@ -10,6 +10,13 @@
 - 제안서: 발주처(골프장 오너, 지자체)를 설득하는 격식체. 수치와 실적을 앞세움.
 - 용어는 업계 통용어를 씀 (그린, 페어웨이, 러프, 벤트그라스, 켄터키블루그래스, 한지형/난지형 잔디, 내장객, 객단가, 홀당 관리비 등).
 
+## 이미지 제작 방식
+- 사용자가 GPT로 만든 1차 초안을 `drafts/gpt/` 또는 대화로 넘긴다. 절차는 `drafts/README.md`.
+- 슬라이드·도식은 `images/html/`에 HTML로 작성하고 `_base.css`(브랜드 색상, Pretendard 글꼴)를 링크한다.
+- `node tools/render.mjs images/html/파일.html` → `images/generated/파일.png` (1920×1080, 2배 해상도).
+- 렌더링 후 반드시 PNG를 직접 열어 글자 겹침, 잘림을 확인하고 사용자에게 보여준다.
+- 글꼴이 깨지면 `cp brand/fonts/*.otf ~/.fonts/ && fc-cache -f` 실행.
+
 ## 작업 규칙
 - 새 자료는 해당 폴더의 `_template/`을 복사해서 시작한다.
 - 파일 이름은 `YYYY-MM-DD_주제_버전` 형식 (README 참고).
