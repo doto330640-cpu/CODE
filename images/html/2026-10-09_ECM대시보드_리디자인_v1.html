@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>ECM 대시보드 리디자인</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  html, body { height: auto; overflow: visible; }
+  :root {
+    --bg: #F2F5F3;
+    --card: #FFFFFF;
+    --ink: #13201B;
+    --ink2: #4A5A53;
+    --mute: #8A9891;
+    --line: #E3E9E5;
+    --brand: #0F7A5C;
+    --brand-d: #0B3D2E;
+    --brand-l: #E3F3EC;
+    --ok: #2FA36B;
+    --best: #157A4A;
+    --watch: #F2B01E;
+    --warn: #F07A1A;
+    --danger: #E5484D;
+    --none: #D7DED9;
+    --sky: #2F7FD8;
+  }
+  body { background: var(--bg); color: var(--ink); }
+  .app { display: grid; grid-template-columns: 248px 1fr; min-height: 1600px; }
+
+  /* 사이드바 */
+  .side { background: var(--brand-d); color: #CFE3DA; padding: 26px 18px; display: flex; flex-direction: column; }
+  .logo { display: flex; align-items: center; gap: 10px; padding: 0 8px 26px; }
+  .logo-mark { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg, #3FD08F, #0F7A5C); display: grid; place-items: center; }
+  .logo b { font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
+  .logo span { font-size: 13px; color: #8FB8A6; display: block; margin-top: -2px; }
+  .nav-sec { font-size: 12px; font-weight: 600; color: #6F978A; letter-spacing: 0.08em; padding: 18px 12px 8px; }
+  .nav a { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px; font-size: 16px; font-weight: 500; color: #CFE3DA; text-decoration: none; }
+  .nav a svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .nav a.on { background: rgba(63, 208, 143, 0.16); color: #fff; font-weight: 700; box-shadow: inset 3px 0 0 #3FD08F; }
+  .nav a .cnt { margin-left: auto; font-size: 12px; font-weight: 700; background: var(--danger); color: #fff; border-radius: 10px; padding: 1px 8px; }
+  .side-foot { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.08); padding: 16px 8px 0; display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 38px; height: 38px; border-radius: 50%; background: #1D5B47; color: #BFF0D8; display: grid; place-items: center; font-weight: 700; }
+  .side-foot b { color: #fff; font-size: 15px; display: block; }
+  .side-foot small { font-size: 13px; color: #7FA596; }
+
+  /* 상단바 */
+  .main { padding: 22px 30px 40px; }
+  .top { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  .top h1 { font-size: 26px; font-weight: 800; color: var(--ink); margin: 0; letter-spacing: -0.02em; }
+  .top .date { font-size: 16px; color: var(--mute); font-weight: 500; }
+  .sp { flex: 1; }
+  .sel { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; font-size: 16px; font-weight: 700; min-width: 210px; }
+  .sel .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px #DDF3E7; }
+  .sel .chev { margin-left: auto; color: var(--mute); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 15px; font-size: 15px; font-weight: 600; color: var(--ink2); }
+  .btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .btn.pri { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .ibtn { width: 42px; height: 42px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); display: grid; place-items: center; color: var(--ink2); position: relative; }
+  .ibtn svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .ibtn .badge { position: absolute; top: 8px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); border: 2px solid #fff; }
+
+  .card { background: var(--card); border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(16, 40, 30, 0.04), 0 8px 24px rgba(16, 40, 30, 0.04); padding: 22px 24px; }
+  .ch { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .ch h3 { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+  .ch .sub { font-size: 14px; color: var(--mute); font-weight: 500; }
+  .ch .more { margin-left: auto; font-size: 14px; font-weight: 600; color: var(--brand); }
+  .tag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .t-danger { background: #FDE8E8; color: #C62F35; }
+  .t-warn { background: #FEEBDC; color: #C25A0C; }
+  .t-ok { background: #DFF3E8; color: #1C7A4C; }
+  .t-mute { background: #EEF2EF; color: var(--ink2); }
+  .t-sample { background: #EDE9FE; color: #6D4BD8; }
+
+  /* 브리핑 */
+  .brief { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; padding: 24px 28px; background: linear-gradient(110deg, #0B3D2E 0%, #0F6B50 60%, #1C8C66 100%); color: #fff; border: none; position: relative; overflow: hidden; }
+  .brief::after { content: ''; position: absolute; right: -60px; top: -80px; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(63,208,143,0.35), transparent 70%); }
+  .brief .lbl { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #A7DCC5; font-weight: 600; }
+  .brief .lbl .ai { background: rgba(255,255,255,0.14); border-radius: 8px; padding: 3px 10px; color: #fff; font-weight: 700; }
+  .brief .head { font-size: 27px; font-weight: 800; margin-top: 8px; letter-spacing: -0.02em; }
+  .brief .chips { display: flex; gap: 8px; margin-top: 14px; }
+  .brief .chips span { font-size: 14px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 20px; padding: 5px 12px; color: #E4F5EC; }
+  .brief .act { display: flex; gap: 14px; position: relative; z-index: 1; }
+  .brief .stat { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.16); border-radius: 14px; padding: 12px 20px; text-align: center; min-width: 120px; }
+  .brief .stat b { font-size: 30px; font-weight: 800; display: block; }
+  .brief .stat small { font-size: 13px; color: #A7DCC5; }
+  .brief .go { background: #fff; color: var(--brand-d); border-radius: 14px; padding: 0 22px; display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; }
+
+  /* KPI */
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin: 16px 0; }
+  .kpi { padding: 18px 20px; }
+  .kpi .k { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink2); font-weight: 600; }
+  .kpi .k i { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; }
+  .kpi .k i svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .kpi .v { font-size: 34px; font-weight: 800; margin-top: 10px; letter-spacing: -0.02em; }
+  .kpi .v small { font-size: 16px; font-weight: 600; color: var(--mute); margin-left: 4px; }
+  .kpi .d { font-size: 13.5px; color: var(--mute); margin-top: 4px; }
+  .meter { height: 8px; border-radius: 4px; background: #EEF2EF; margin-top: 12px; position: relative; overflow: hidden; }
+  .meter b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+
+  .row { display: grid; gap: 16px; margin-bottom: 16px; }
+  .r1 { grid-template-columns: 1.55fr 1fr; }
+  .r2 { grid-template-columns: 1fr 1fr 1fr; }
+  .r3 { grid-template-columns: 1.4fr 1fr; }
+
+  /* 지도 */
+  .map { position: relative; border-radius: 14px; overflow: hidden; height: 560px; background: #7FA86A; }
+  .map svg.course { width: 100%; height: 100%; display: block; }
+  .layers { position: absolute; left: 16px; top: 16px; background: rgba(255,255,255,0.94); border-radius: 12px; padding: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+  .layers div { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; padding: 7px 10px; border-radius: 8px; color: var(--ink2); }
+  .layers div.on { background: var(--brand-l); color: var(--brand-d); }
+  .layers .sw { margin-left: auto; width: 28px; height: 16px; border-radius: 8px; background: #CBD5CF; position: relative; }
+  .layers .sw::after { content: ''; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+  .layers .on .sw { background: var(--brand); }
+  .layers .on .sw::after { left: 14px; }
+  .maplegend { position: absolute; left: 16px; bottom: 16px; background: rgba(255,255,255,0.94); border-radius: 12px; padding: 10px 14px; display: flex; gap: 14px; font-size: 13px; font-weight: 600; color: var(--ink2); }
+  .maplegend span { display: flex; align-items: center; gap: 6px; }
+  .maplegend i { width: 14px; height: 14px; border-radius: 4px; }
+  .zoom { position: absolute; right: 16px; bottom: 16px; display: flex; flex-direction: column; background: #fff; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); overflow: hidden; }
+  .zoom div { width: 42px; height: 40px; display: grid; place-items: center; font-size: 20px; color: var(--ink2); border-bottom: 1px solid var(--line); }
+  .zoom div:last-child { border: none; font-size: 12px; font-weight: 700; }
+  .unplaced { position: absolute; right: 16px; top: 16px; background: rgba(255,255,255,0.95); border-radius: 12px; padding: 12px 14px; width: 250px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+  .unplaced b { font-size: 13px; color: var(--ink2); }
+  .unplaced .s { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 14px; font-weight: 700; }
+  .pulse { width: 14px; height: 14px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 5px rgba(229,72,77,0.22), 0 0 0 10px rgba(229,72,77,0.1); flex: none; }
+  .unplaced small { display: block; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+
+  /* 진단 */
+  .diag-top { display: flex; align-items: flex-start; gap: 14px; }
+  .diag-n { width: 36px; height: 36px; border-radius: 10px; background: var(--danger); color: #fff; font-weight: 800; font-size: 18px; display: grid; place-items: center; flex: none; }
+  .diag-t { font-size: 19px; font-weight: 800; }
+  .diag-m { font-size: 14px; color: var(--mute); margin-top: 4px; display: flex; gap: 10px; align-items: center; }
+  .conf { display: inline-flex; gap: 3px; }
+  .conf i { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+  .gauge { margin: 22px 0 6px; }
+  .gauge .bar { position: relative; height: 18px; border-radius: 9px; display: flex; overflow: hidden; }
+  .gauge .bar div { height: 100%; }
+  .gauge .pin { position: absolute; top: -12px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+  .gauge .pin b { background: var(--ink); color: #fff; font-size: 14px; font-weight: 800; padding: 3px 9px; border-radius: 8px; white-space: nowrap; }
+  .gauge .pin i { width: 2px; height: 30px; background: var(--ink); }
+  .gauge .scale { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--mute); margin-top: 8px; position: relative; height: 18px; }
+  .gauge .scale span { position: absolute; transform: translateX(-50%); }
+  .gwrap { position: relative; padding-top: 34px; margin-top: 18px; }
+  .ev { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+  .ev div { background: #F6F8F7; border-radius: 12px; padding: 12px 14px; }
+  .ev small { font-size: 12.5px; color: var(--mute); display: block; }
+  .ev b { font-size: 20px; font-weight: 800; }
+  .ev .w { color: var(--danger); }
+  .box { border-radius: 12px; padding: 14px 16px; margin-top: 12px; font-size: 15px; line-height: 1.6; color: var(--ink2); }
+  .box b { display: block; font-size: 13px; margin-bottom: 4px; }
+  .box.cause { background: #F6F8F7; }
+  .box.cause b { color: var(--ink2); }
+  .box.prop { background: var(--brand-l); color: #1C4A3A; }
+  .box.prop b { color: var(--brand); }
+  .diag-act { display: flex; gap: 10px; margin-top: 16px; }
+  .diag-act .btn { font-size: 14px; padding: 9px 14px; }
+
+  /* 날씨 */
+  .wx-now { display: flex; align-items: center; gap: 16px; }
+  .wx-now .t { font-size: 48px; font-weight: 800; letter-spacing: -0.03em; }
+  .wx-now .t small { font-size: 22px; color: var(--mute); }
+  .wx-now .c { font-size: 17px; font-weight: 700; }
+  .wx-now .m { font-size: 13.5px; color: var(--mute); margin-top: 3px; }
+  .wx-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 18px; }
+  .wx-grid div { background: #F6F8F7; border-radius: 10px; padding: 8px 12px; font-size: 13px; color: var(--mute); }
+  .wx-grid b { display: block; font-size: 16px; color: var(--ink); }
+  .fc { display: grid; grid-template-columns: 54px 34px 1fr 66px; align-items: center; gap: 10px; padding: 7px 0; font-size: 15px; border-top: 1px solid #F0F3F1; }
+  .fc .day { font-weight: 700; }
+  .fc .day.sun { color: var(--danger); } .fc .day.sat { color: var(--sky); }
+  .fc .rng { position: relative; height: 8px; border-radius: 4px; background: #EEF2EF; }
+  .fc .rng b { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: linear-gradient(90deg, #79B8F0, #F2B01E, #F07A1A); }
+  .fc .rng em { position: absolute; top: -7px; font-style: normal; font-size: 12.5px; font-weight: 700; color: var(--ink2); }
+  .fc .pp { text-align: right; font-size: 13.5px; font-weight: 700; color: var(--sky); }
+  .fc .pp.lo { color: var(--mute); font-weight: 500; }
+
+  /* 홀 히트맵 */
+  .holes { display: grid; grid-template-columns: 54px repeat(9, 1fr); gap: 6px; }
+  .holes .hd { text-align: center; font-size: 14px; font-weight: 800; color: var(--ink2); padding-bottom: 2px; }
+  .holes .rl { font-size: 13px; font-weight: 700; color: var(--mute); display: flex; align-items: center; }
+  .holes .c { height: 46px; border-radius: 9px; display: grid; place-items: center; font-size: 14px; font-weight: 800; color: #fff; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; font-size: 13px; color: var(--ink2); }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .legend i { width: 14px; height: 14px; border-radius: 4px; }
+
+  /* 센서 추이 */
+  .chart-wrap svg { width: 100%; display: block; }
+  .series-leg { display: flex; gap: 18px; font-size: 13.5px; color: var(--ink2); margin-top: 6px; }
+  .series-leg span { display: flex; align-items: center; gap: 6px; }
+  .series-leg i { width: 18px; height: 4px; border-radius: 2px; }
+
+  /* 작업 */
+  .tasks-top { display: flex; align-items: center; gap: 24px; }
+  .tasks-top .big { font-size: 15px; color: var(--ink2); line-height: 1.6; }
+  .tcats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 18px; }
+  .tcats > div { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .tcats small { font-size: 13px; color: var(--mute); }
+  .tcats b { display: block; font-size: 20px; font-weight: 800; margin-top: 2px; }
+  .tcats .tb { height: 5px; border-radius: 3px; background: #EEF2EF; margin-top: 8px; }
+
+  .empty { text-align: center; padding: 26px 10px 10px; color: var(--mute); font-size: 14.5px; line-height: 1.6; }
+  .empty .ic { width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 12px; display: grid; place-items: center; }
+  .empty .ic svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+  .empty b { color: var(--ink); font-size: 16px; display: block; }
+  .empty .btn { margin-top: 14px; }
+
+  .sys { display: flex; gap: 12px; }
+  .sys div { flex: 1; display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; font-size: 15px; font-weight: 600; }
+  .sys i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .sys small { margin-left: auto; color: var(--mute); font-weight: 500; font-size: 13.5px; }
+  .note { margin-top: 18px; font-size: 13px; color: var(--mute); text-align: right; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 사이드바 -->
+  <aside class="side">
+    <div class="logo">
+      <div class="logo-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M4 18c3-8 9-12 16-13"/><path d="M4 12c2-3 5-5 9-6"/></svg></div>
+      <div><b>ecm</b><span>Course Intelligence</span></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <div class="avatar">E</div>
+      <div><b>ECM 운영관리자</b><small>ECM 관리자 · 전체 코스</small></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- 상단바 -->
+    <div class="top">
+      <h1>코스관리자용 대시보드</h1>
+      <span class="date">2026.10.09 (금) · 14:30 기준</span>
+      <div class="sp"></div>
+      <div class="sel"><span class="dot"></span>라비돌cc<span class="chev">⌄</span></div>
+      <span class="btn"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13l6 6M15 13l-6 6"/></svg>엑셀</span>
+      <span class="btn"><svg viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>PDF·인쇄</span>
+      <span class="btn pri"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>업무 관제</span>
+      <span class="ibtn"><svg viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
+      <span class="ibtn"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg><i class="badge"></i></span>
+      <span class="ibtn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span>
+    </div>
+
+    <!-- ECM 오늘의 브리핑 -->
+    <section class="card brief">
+      <div>
+        <div class="lbl"><span class="ai">ECM AI 브리핑</span>2026-10-09 03:01 자동 생성</div>
+        <div class="head">최근 일주일간 비가 없어 코스 전반 관수가 필요합니다</div>
+        <div class="chips"><span>💧 뿌리층 건조 경보 1곳</span><span>☀️ 무강수 7일째</span><span>🌧 10/12(월) 비 예보 60%</span></div>
+      </div>
+      <div class="act">
+        <div class="stat"><b>0</b><small>오늘 제안</small></div>
+        <div class="stat"><b style="color:#FF9C9F">1</b><small>긴급 확인</small></div>
+        <div class="go">브리핑 보기 →</div>
+      </div>
+    </section>
+
+    <!-- KPI -->
+    <section class="kpis">
+      <div class="card kpi">
+        <div class="k"><i style="background:#EDE9FE;color:#6D4BD8"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12l6-6"/></svg></i>코스 건강지수 (TSI)</div>
+        <div class="v" style="color:var(--mute)">—<small>드론 분석 대기</small></div>
+        <div class="d">드론 촬영 등록 시 자동 산출</div>
+        <div class="meter"></div>
+      </div>
+      <div class="card kpi">
+        <div class="k"><i style="background:#FDE8E8;color:var(--danger)"><svg viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg></i>주의 구역</div>
+        <div class="v">1<small>곳</small></div>
+        <div class="d"><span class="tag t-danger">경보 1</span>&nbsp; Qbics D002</div>
+      </div>
+      <div class="card kpi">
+        <div class="k"><i style="background:#FEEBDC;color:var(--warn)"><svg viewBox="0 0 24 24"><path d="M12 2.7s-6 6.5-6 11a6 6 0 0 0 12 0c0-4.5-6-11-6-11z"/></svg></i>뿌리층 수분 (10cm)</div>
+        <div class="v" style="color:var(--danger)">3.5<small>%</small></div>
+        <div class="d">정상 범위 18~28% · 10-08 14:51</div>
+        <div class="meter"><b style="width:10.6%;background:var(--danger)"></b></div>
+      </div>
+      <div class="card kpi">
+        <div class="k"><i style="background:#FFF4D6;color:#B07D06"><svg viewBox="0 0 24 24"><path d="M14 14.8V4a2 2 0 0 0-4 0v10.8a4 4 0 1 0 4 0z"/></svg></i>지온</div>
+        <div class="v">24.2<small>℃</small></div>
+        <div class="d">생육 정체 기준 25℃ 이하</div>
+        <div class="meter"><b style="width:72%;background:linear-gradient(90deg,#79B8F0,#F2B01E)"></b></div>
+      </div>
+      <div class="card kpi">
+        <div class="k"><i style="background:var(--brand-l);color:var(--brand)"><svg viewBox="0 0 24 24"><path d="M4.9 19.1a10 10 0 0 1 0-14.2M7.8 16.2a6 6 0 0 1 0-8.4M16.2 7.8a6 6 0 0 1 0 8.4M19.1 4.9a10 10 0 0 1 0 14.2"/><circle cx="12" cy="12" r="2"/></svg></i>센서 수신</div>
+        <div class="v">0<small>% · 1대</small></div>
+        <div class="d">최근 1시간 수신 없음 · 오늘 4/1,440건</div>
+        <div class="meter"><b style="width:0.3%;background:var(--warn)"></b></div>
+      </div>
+    </section>
+
+    <!-- 지도 + 진단 -->
+    <section class="row r1">
+      <div class="card">
+        <div class="ch"><h3>코스 지도</h3><span class="sub">라비돌cc · 퍼블릭 9홀</span><span class="tag t-sample">시안 예시: 홀 배치·식생지수</span><span class="more">전체보기 ↗</span></div>
+        <div class="map">
+          <svg class="course" id="course" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid slice"></svg>
+          <div class="layers">
+            <div class="on">센서<span class="sw"></span></div>
+            <div>촬영본<span class="sw"></span></div>
+            <div class="on">작업<span class="sw"></span></div>
+            <div class="on">위험<span class="sw"></span></div>
+            <div class="on">식생지수<span class="sw"></span></div>
+          </div>
+          <div class="unplaced">
+            <b>위치 미등록 센서</b>
+            <div class="s"><span class="pulse"></span>Qbics D002<span class="tag t-danger" style="margin-left:auto">경보</span></div>
+            <small>설치 위치를 지정하면 지도에 표시됩니다 →</small>
+          </div>
+          <div class="maplegend">
+            <span><i style="background:var(--best)"></i>최상</span><span><i style="background:var(--ok)"></i>양호</span><span><i style="background:var(--watch)"></i>주의</span><span><i style="background:var(--warn)"></i>경고</span><span><i style="background:var(--danger)"></i>위험</span>
+          </div>
+          <div class="zoom"><div>+</div><div>−</div><div>100%</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h3>ECM 진단</h3><span class="sub">AI 원인 분석·조치 제안</span><span class="tag t-danger" style="margin-left:auto">1곳</span></div>
+        <div class="diag-top">
+          <div class="diag-n">1</div>
+          <div>
+            <div class="diag-t">Qbics D002 — 뿌리층이 말랐습니다</div>
+            <div class="diag-m"><span class="tag t-danger">위험</span>10/08 측정 · 신뢰도 <span class="conf"><i></i><i></i><i></i><i></i><i style="opacity:.25"></i></span> 90%</div>
+          </div>
+        </div>
+        <div class="gwrap">
+          <div class="gauge">
+            <div class="bar" id="vwcbar"></div>
+            <div class="pin" style="left:8.75%"><b>3.5%</b><i></i></div>
+            <div class="scale" id="vwcscale"></div>
+          </div>
+        </div>
+        <div class="ev">
+          <div><small>수분(10cm)</small><b class="w">3.5%</b></div>
+          <div><small>정상 범위</small><b>18~28%</b></div>
+          <div><small>이어진 시간</small><b class="w">0.3h</b></div>
+          <div><small>지온</small><b>24.2℃</b></div>
+        </div>
+        <div class="box cause"><b>원인</b>모래 포장이 물을 머금는 한계가 15~20%대입니다. 그 아래로 내려가면 뿌리털부터 마르고, 다시 적셔도 물이 겉돌아 잘 스미지 않습니다.</div>
+        <div class="box prop"><b>오늘의 조치</b>오늘 중 관수를 잡아주세요. 한 번에 많이 주기보다 나눠 적셔야 물이 스밉니다. 물이 겉돌면 침투제를 함께 써주세요.</div>
+        <div class="diag-act"><span class="btn pri">관수 작업 배정</span><span class="btn">위치 보기</span><span class="btn">상세</span></div>
+      </div>
+    </section>
+
+    <!-- 날씨 / 홀 현황 / 센서 추이 -->
+    <section class="row r2">
+      <div class="card">
+        <div class="ch"><h3>날씨</h3><span class="sub">기상청 · 경기 화성 코스 중심점</span><span class="tag t-mute" style="margin-left:auto">기상청 | Open-Meteo</span></div>
+        <div class="wx-now">
+          <svg width="64" height="64" viewBox="0 0 64 64"><circle cx="24" cy="24" r="12" fill="#FFC531"/><path d="M22 50h26a10 10 0 0 0 0-20 14 14 0 0 0-26 4 8 8 0 0 0 0 16z" fill="#DCE6EF"/></svg>
+          <div><div class="t">22.5<small>℃</small></div></div>
+          <div><div class="c">구름많음</div><div class="m">일출 06:33 · 일몰 18:05</div></div>
+        </div>
+        <div class="wx-grid"><div>습도<b>42%</b></div><div>강수확률<b>0%</b></div><div>바람<b>서북서 2.7</b></div></div>
+        <div id="fc"></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h3>코스 홀별 현황</h3><span class="sub">식생지수(NDVI)</span><span class="tag t-sample" style="margin-left:auto">시안 예시</span></div>
+        <div class="holes" id="holes"></div>
+        <div class="legend">
+          <span><i style="background:var(--best)"></i>최상 0.70↑</span><span><i style="background:var(--ok)"></i>양호 0.55~0.69</span><span><i style="background:var(--watch)"></i>주의 0.40~0.54</span><span><i style="background:var(--warn)"></i>경고 0.25~0.39</span><span><i style="background:var(--danger)"></i>위험 0.25↓</span>
+        </div>
+        <div class="box cause" style="margin-top:16px"><b>실제 데이터</b>현재 실측 0 / 총 9홀 — 드론 촬영을 등록하면 이 표가 자동으로 채워집니다.</div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h3>토양센서 추이</h3><span class="sub">최근 7일 · Qbics D002</span><span class="more">센서 데이터 →</span></div>
+        <div class="chart-wrap"><svg id="series" viewBox="0 0 520 300"></svg></div>
+        <div class="series-leg"><span><i style="background:var(--sky)"></i>토양수분 %</span><span><i style="background:#F07A1A"></i>지온 ℃</span><span><i style="background:#DFF3E8;height:10px"></i>수분 정상 18~28%</span><span>○ 수분 결측</span></div>
+        <div class="ev" style="grid-template-columns:repeat(3,1fr)">
+          <div><small>토양수분</small><b class="w">6.1%</b></div>
+          <div><small>공극수 EC</small><b>0.006</b></div>
+          <div><small>지온</small><b>20.3℃</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 예보·제안 / 작업 -->
+    <section class="row r3">
+      <div class="row" style="grid-template-columns:1fr 1fr;margin:0">
+        <div class="card">
+          <div class="ch"><h3>ECM 예보</h3><span class="sub">병해 위험도</span></div>
+          <div class="empty">
+            <div class="ic" style="background:#EDE9FE;color:#6D4BD8"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+            <b>드론 분석 대기 중</b>드론 촬영을 분석하면<br>홀별 병해 위험도가 여기에 표시됩니다.
+            <div><span class="btn">드론 데이터 등록 →</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><h3>ECM 제안</h3><span class="sub">주의 이상 전체</span></div>
+          <div class="empty">
+            <div class="ic" style="background:var(--brand-l);color:var(--brand)"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></div>
+            <b>새로 제안할 작업이 없습니다</b>«주의» 이상 위험이 생기면<br>필요한 작업을 자동으로 제안합니다.
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><h3>작업 진행 상황</h3><span class="sub">오늘 배정 0건</span><span class="more">작업 현황 →</span></div>
+        <div class="tasks-top">
+          <svg width="128" height="128" viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="none" stroke="#EEF2EF" stroke-width="14"/><text x="60" y="58" text-anchor="middle" font-size="26" font-weight="800" fill="#13201B">0</text><text x="60" y="80" text-anchor="middle" font-size="13" fill="#8A9891">오늘 작업</text></svg>
+          <div class="big">
+            <span class="tag t-ok">완료 0</span> <span class="tag t-mute">진행중 0</span> <span class="tag t-mute">대기 0</span><br>
+            지난 예정일을 넘긴 작업이 없습니다.<br>
+            <b style="color:var(--brand)">진단 1건에 대한 관수 작업 배정을 권장합니다.</b>
+          </div>
+        </div>
+        <div class="tcats" id="tcats"></div>
+      </div>
+    </section>
+
+    <!-- 시스템 상태 -->
+    <section class="sys">
+      <div><i style="background:var(--warn);box-shadow:0 0 0 4px #FEEBDC"></i>토양센서 수신<small>최근 1시간 0건</small></div>
+      <div><i style="background:var(--ok);box-shadow:0 0 0 4px #DFF3E8"></i>기상 관측 연결<small>기상청 14:30</small></div>
+      <div><i style="background:#B8C3BD;box-shadow:0 0 0 4px #EEF2EF"></i>드론 촬영<small>등록된 촬영 없음</small></div>
+      <div><i style="background:var(--ok);box-shadow:0 0 0 4px #DFF3E8"></i>AI 브리핑<small>매일 03:00 자동 생성</small></div>
+    </section>
+    <div class="note">디자인 시안 · 날씨·센서·진단·브리핑은 2026-10-09 데모 서버 실제 값, 홀 배치와 식생지수는 시안용 예시입니다.</div>
+  </main>
+</div>
+
+<script>
+  // 사이드바 메뉴 (현재 대시보드 구성 그대로)
+  const ic = {
+    grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    spark: '<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+    map: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/>',
+    db: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+    clip: '<rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 2h6v4H9zM9 12h6M9 16h4"/>',
+    users: '<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 3.1a4 4 0 0 1 0 7.8M22 21a7 7 0 0 0-4-6.3"/>',
+    box: '<path d="M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/>',
+    chart: '<path d="M3 3v18h18M7 15v3M12 10v8M17 6v12"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',
+    book: '<path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/>',
+  };
+  const nav = [
+    ['', [['grid', '대시보드', 'on'], ['spark', 'ECM 오늘의 브리핑']]],
+    ['코스·데이터', [['map', '코스 현황', '', 1], ['db', '데이터관리']]],
+    ['운영', [['clip', '작업관리'], ['users', '직원 관리'], ['box', '품목 관리'], ['chart', '통계']]],
+    ['관리', [['gear', '시스템 설정'], ['bell', '공지사항'], ['book', '매뉴얼']]],
+  ];
+  document.getElementById('nav').innerHTML = nav.map(([sec, items]) =>
+    (sec ? `<div class="nav-sec">${sec}</div>` : '') +
+    items.map(([i, t, on, cnt]) => `<a class="${on || ''}"><svg viewBox="0 0 24 24">${ic[i]}</svg>${t}${cnt ? `<span class="cnt">${cnt}</span>` : ''}</a>`).join('')
+  ).join('');
+
+  // 상태 색상
+  const C = { best: '#157A4A', ok: '#2FA36B', watch: '#F2B01E', warn: '#F07A1A', danger: '#E5484D' };
+  const grade = v => v >= 0.7 ? C.best : v >= 0.55 ? C.ok : v >= 0.4 ? C.watch : v >= 0.25 ? C.warn : C.danger;
+
+  // 시안용 예시 식생지수 [티, 페어웨이, 그린]
+  const ndvi = [[0.74,0.71,0.68],[0.69,0.66,0.62],[0.72,0.58,0.47],[0.75,0.73,0.70],[0.66,0.52,0.36],[0.71,0.69,0.64],[0.73,0.70,0.66],[0.68,0.61,0.55],[0.76,0.72,0.69]];
+
+  // 홀 히트맵
+  const H = document.getElementById('holes');
+  let h = '<div></div>' + ndvi.map((_, i) => `<div class="hd">${i + 1}</div>`).join('');
+  ['티', '페어웨이', '그린'].forEach((lab, r) => {
+    h += `<div class="rl">${lab}</div>` + ndvi.map(v => `<div class="c" style="background:${grade(v[r])}">${v[r].toFixed(2).slice(1)}</div>`).join('');
+  });
+  H.innerHTML = h;
+
+  // 코스 지도 (시안용 일러스트)
+  const holes = [
+    [[90,470],[150,380],[170,300]], [[230,290],[300,250],[380,210]], [[420,170],[500,120],[590,100]],
+    [[640,120],[720,150],[800,140]], [[860,190],[880,280],[850,360]], [[790,420],[700,470],[610,480]],
+    [[560,420],[500,360],[430,330]], [[390,390],[320,440],[250,470]], [[330,520],[430,520],[500,520]],
+  ];
+  const svg = document.getElementById('course');
+  let s = `<defs>
+    <radialGradient id="bgG" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#8DB777"/><stop offset="1" stop-color="#5E8E4E"/></radialGradient>
+    <pattern id="trees" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="8" cy="8" r="7" fill="#3E6B37"/><circle cx="20" cy="19" r="6" fill="#47773F"/></pattern>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".25"/></filter>
+  </defs>
+  <rect width="1000" height="560" fill="url(#bgG)"/>
+  <path d="M0 0h1000v40c-120 20-240-10-360 10S380 40 260 20 60 60 0 40z" fill="url(#trees)" opacity=".9"/>
+  <path d="M0 560h1000v-14c-160-10-320 6-480-2S140 560 0 548z" fill="url(#trees)" opacity=".8"/>
+  <path d="M955 0h45v560h-45c-20-80 10-160-6-260S970 80 955 0z" fill="url(#trees)" opacity=".9"/>
+  <path d="M0 80c40 60 10 140 30 220s-10 160 0 260H0z" fill="url(#trees)" opacity=".9"/>
+  <ellipse cx="560" cy="270" rx="70" ry="42" fill="#5BA3D9" opacity=".95"/><ellipse cx="548" cy="262" rx="40" ry="18" fill="#8CC4EC" opacity=".6"/>
+  <path d="M120 520 C 300 500 380 300 560 330 S 820 260 880 140" fill="none" stroke="#E9E2CF" stroke-width="5" stroke-dasharray="2 9" stroke-linecap="round" opacity=".8"/>
+ `;
+  holes.forEach(([t, m, g], i) => {
+    const d = `M${t[0]} ${t[1]} Q${m[0]} ${m[1]} ${g[0]} ${g[1]}`;
+    const [vt, vf, vg] = ndvi[i];
+    s += `<path d="${d}" fill="none" stroke="#9FC488" stroke-width="58" stroke-linecap="round" opacity=".55"/>`;
+    s += `<path d="${d}" fill="none" stroke="${grade(vf)}" stroke-width="34" stroke-linecap="round" opacity=".92"/>`;
+    s += `<path d="${d}" fill="none" stroke="#fff" stroke-width="34" stroke-linecap="round" opacity=".07" stroke-dasharray="6 6"/>`;
+    s += `<ellipse cx="${(m[0] + g[0]) / 2 + 20}" cy="${(m[1] + g[1]) / 2 + 22}" rx="11" ry="7" fill="#EFE3C2"/>`;
+    s += `<circle cx="${g[0]}" cy="${g[1]}" r="21" fill="${grade(vg)}" stroke="#fff" stroke-width="3" filter="url(#sh)"/>`;
+    s += `<line x1="${g[0]}" y1="${g[1]}" x2="${g[0]}" y2="${g[1] - 30}" stroke="#fff" stroke-width="2"/><path d="M${g[0]} ${g[1] - 30}l12 4-12 4z" fill="#E5484D"/>`;
+    s += `<rect x="${t[0] - 13}" y="${t[1] - 9}" width="26" height="18" rx="5" fill="${grade(vt)}" stroke="#fff" stroke-width="2.5"/>`;
+    s += `<circle cx="${t[0] - 22}" cy="${t[1] - 22}" r="14" fill="#13201B" filter="url(#sh)"/><text x="${t[0] - 22}" y="${t[1] - 17}" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">${i + 1}</text>`;
+  });
+  // 경고 홀 강조
+  s += `<circle cx="850" cy="360" r="36" fill="none" stroke="#E5484D" stroke-width="3" stroke-dasharray="5 5"/>`;
+  s += `<g filter="url(#sh)"><rect x="690" y="318" width="150" height="34" rx="9" fill="#fff"/><text x="765" y="340" text-anchor="middle" font-size="13.5" font-weight="700" fill="#C62F35">5번 그린 경고 0.36</text></g>`;
+  svg.innerHTML = s;
+
+  // 수분 게이지 (0~40%)
+  const max = 40, bands = [[0,14,'#E5484D'],[14,18,'#F2B01E'],[18,28,'#2FA36B'],[28,33,'#F2B01E'],[33,40,'#5B8DEF']];
+  document.getElementById('vwcbar').innerHTML = bands.map(([a, b, c]) => `<div style="width:${(b - a) / max * 100}%;background:${c};opacity:.85"></div>`).join('');
+  document.getElementById('vwcscale').innerHTML = [['0',0],['14 마름',14],['18',18],['정상',23],['28',28],['33 과습',33],['40%',40]]
+    .map(([t, v]) => `<span style="left:${v / max * 100}%">${t}</span>`).join('');
+
+  // 7일 예보 (기상청·Open-Meteo 실제 값)
+  const fc = [['금 9','sun',26,13,30],['토 10','partly',26,16,30],['일 11','rain',25,17,60],['월 12','rain',24.6,17.9,43],['화 13','partly',19.8,10,10],['수 14','partly',18.3,7.5,1],['목 15','cloud',20.4,7.8,16]];
+  const wi = {
+    sun: '<circle cx="15" cy="15" r="7" fill="#FFC531"/>',
+    partly: '<circle cx="11" cy="11" r="6" fill="#FFC531"/><path d="M10 25h13a5 5 0 0 0 0-10 7 7 0 0 0-13 2 4 4 0 0 0 0 8z" fill="#CBD8E4"/>',
+    cloud: '<path d="M7 24h16a6 6 0 0 0 0-12 8 8 0 0 0-15 2 5 5 0 0 0-1 10z" fill="#B9C6D2"/>',
+    rain: '<path d="M7 18h16a6 6 0 0 0 0-12 8 8 0 0 0-15 2 5 5 0 0 0-1 10z" fill="#A9B8C6"/><path d="M10 21l-2 5M16 21l-2 5M22 21l-2 5" stroke="#2F7FD8" stroke-width="2" stroke-linecap="round"/>',
+  };
+  const lo = 5, hi = 30;
+  document.getElementById('fc').innerHTML = fc.map(([d, w, tx, tn, p]) => {
+    const cls = d.startsWith('일') ? 'sun' : d.startsWith('토') ? 'sat' : '';
+    const l = (tn - lo) / (hi - lo) * 100, r = (tx - lo) / (hi - lo) * 100;
+    return `<div class="fc"><span class="day ${cls}">${d}</span><svg width="30" height="30" viewBox="0 0 30 30">${wi[w]}</svg>
+      <div class="rng"><b style="left:${l}%;width:${r - l}%"></b><em style="left:calc(${l}% - 26px)">${Math.round(tn)}°</em><em style="left:calc(${r}% + 6px)">${Math.round(tx)}°</em></div>
+      <span class="pp ${p < 30 ? 'lo' : ''}">☂ ${p}%</span></div>`;
+  }).join('');
+
+  // 토양센서 7일 추이 (실제 값, 수분 0은 결측 처리)
+  const series = [['10-02',0,26.1],['10-03',0,26.6],['10-04',0,26.1],['10-05',3,21.7],['10-06',0,25.5],['10-07',0,25.1],['10-08',6.1,20.3]];
+  const W = 520, Hh = 300, L = 52, R = 40, T = 16, B = 34;
+  const x = i => L + i * (W - L - R) / (series.length - 1);
+  const yV = v => T + (1 - v / 40) * (Hh - T - B);
+  const yT = v => T + (1 - (v - 10) / 25) * (Hh - T - B);
+  let g = `<rect x="${L}" y="${yV(28)}" width="${W - L - R}" height="${yV(18) - yV(28)}" fill="#DFF3E8"/>`;
+  g += `<text x="${W - R - 4}" y="${yV(28) + 16}" text-anchor="end" font-size="12" fill="#1C7A4C" font-weight="700">정상 18~28%</text>`;
+  [0, 10, 20, 30, 40].forEach(v => { g += `<line x1="${L}" x2="${W - R}" y1="${yV(v)}" y2="${yV(v)}" stroke="#EEF2EF"/><text x="${L - 16}" y="${yV(v) + 4}" text-anchor="end" font-size="12" fill="#8A9891">${v}</text>`; });
+  [10, 20, 30].forEach(v => { g += `<text x="${W - R + 8}" y="${yT(v) + 4}" font-size="12" fill="#F07A1A">${v}°</text>`; });
+  g += `<line x1="${L}" x2="${W - R}" y1="${yV(14)}" y2="${yV(14)}" stroke="#E5484D" stroke-dasharray="4 4"/><text x="${L + 6}" y="${yV(14) - 6}" font-size="12" fill="#E5484D" font-weight="700">마름 기준 14%</text>`;
+  g += `<polyline points="${series.map((d, i) => `${x(i)},${yT(d[2])}`).join(' ')}" fill="none" stroke="#F07A1A" stroke-width="3" stroke-linejoin="round"/>`;
+  series.forEach((d, i) => {
+    g += `<text x="${x(i)}" y="${Hh - 10}" text-anchor="middle" font-size="12" fill="#8A9891">${d[0]}</text>`;
+    if (d[1] > 0) g += `<circle cx="${x(i)}" cy="${yV(d[1])}" r="7" fill="#2F7FD8" stroke="#fff" stroke-width="2.5"/><text x="${x(i)}" y="${yV(d[1]) - 12}" text-anchor="middle" font-size="13" font-weight="800" fill="#2F7FD8">${d[1]}%</text>`;
+    else g += `<circle cx="${x(i)}" cy="${yV(0)}" r="5" fill="#fff" stroke="#B8C3BD" stroke-width="2"/>`;
+  });
+  document.getElementById('series').innerHTML = g;
+
+  // 작업 분류
+  document.getElementById('tcats').innerHTML = ['잔디','조경','관수','정비','갱신','공사']
+    .map(t => `<div><small>${t}</small><b>0<span style="font-size:14px;color:#8A9891;font-weight:600"> / 0</span></b><div class="tb"></div></div>`).join('');
+</script>
+</body>
+</html>
