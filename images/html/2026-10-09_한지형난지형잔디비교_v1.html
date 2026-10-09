@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>한지형·난지형 잔디 비교</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .cols { display: grid; grid-template-columns: 300px 1fr 1fr; margin-top: 48px; border-radius: 18px; overflow: hidden; border: 2px solid var(--line); }
+  .cols > div { padding: 0 30px; display: flex; align-items: center; min-height: 88px; border-bottom: 1px solid var(--line); font-size: 26px; line-height: 1.4; }
+  .cols > div.last { border-bottom: none; }
+  .th { font-size: 32px !important; font-weight: 800; color: #fff; min-height: 104px !important; }
+  .th small { display: block; font-size: 21px; font-weight: 500; opacity: .9; margin-top: 4px; }
+  .th.cool { background: var(--green); }
+  .th.warm { background: #C0782E; }
+  .th.blank { background: var(--sand-light); }
+  .k { font-weight: 700; color: var(--green); background: var(--sand-light); }
+  .c { border-left: 1px solid var(--line); }
+  .w { border-left: 1px solid var(--line); background: #FBF6EE; }
+  b { font-weight: 700; }
+  .point { margin-top: 30px; display: flex; gap: 22px; align-items: center; font-size: 26px; background: var(--green); color: #fff; border-radius: 14px; padding: 22px 32px; }
+  .point em { font-style: normal; font-weight: 800; color: var(--sand); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="eyebrow">코스관리 기초 강의 · 초종 이해</div>
+  <h1>한지형 잔디 vs 난지형 잔디</h1>
+  <div class="lead">초종에 따라 생육 시기가 다르므로, 관리 달력과 예산 배분도 달라집니다.</div>
+
+  <div class="cols">
+    <div class="th blank"></div>
+    <div class="th cool c"><div>한지형 잔디<small>서늘한 기후형</small></div></div>
+    <div class="th warm w" style="background:#C0782E"><div>난지형 잔디<small>따뜻한 기후형</small></div></div>
+
+    <div class="k">대표 초종</div>
+    <div class="c">벤트그라스, 켄터키블루그래스, 라이그라스</div>
+    <div class="w">한국잔디(중지·들잔디), 버뮤다그라스</div>
+
+    <div class="k">생육 적온¹</div>
+    <div class="c"><b>15~24℃</b> · 봄·가을에 왕성</div>
+    <div class="w"><b>27~35℃</b> · 한여름에 왕성</div>
+
+    <div class="k">국내 주 사용처</div>
+    <div class="c">그린, 일부 티·페어웨이</div>
+    <div class="w">페어웨이, 러프</div>
+
+    <div class="k">관리 취약 시기</div>
+    <div class="c">여름 고온다습기 (하고현상, 병해)</div>
+    <div class="w">휴면기 황변 (11월~이듬해 4월 전후)</div>
+
+    <div class="k last">관리 포인트</div>
+    <div class="c last">여름철 관수·시린지, 예방 방제 집중</div>
+    <div class="w last">봄 녹화 촉진, 휴면기 답압 관리</div>
+  </div>
+
+  <div class="point"><em>현장 포인트</em> 한 코스 안에 두 초종이 섞여 있으므로, 같은 달이라도 그린과 페어웨이의 작업 우선순위가 다릅니다.</div>
+
+  <div class="footer">
+    <span>¹ Beard, J. B. (1973). <i>Turfgrass: Science and Culture</i>. Prentice-Hall. 일반적으로 인용되는 지상부 생육 적온 범위.</span>
+    <span>골프코스세미나</span>
+  </div>
+</div>
+</body>
+</html>
