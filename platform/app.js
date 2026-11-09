@@ -5,7 +5,7 @@
   const COLORS = ['#1F7A52', '#2D7BD3', '#D98E16', '#8A5CD0', '#C4476B'];
   const SVG = 'http://www.w3.org/2000/svg';
   const WD = ['일', '월', '화', '수', '목', '금', '토'];
-  let DATA = null, role = 'exec', teamIdx = 0;
+  let DATA = null, SENS = {},  role = 'exec', teamIdx = 0;
   const hidden = new Set(); // 비교 차트에서 숨긴 코스
 
   /* ---------- 유틸 ---------- */
@@ -30,6 +30,9 @@
     return e;
   }
   function s(tag, attrs) { const e = document.createElementNS(SVG, tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); return e; }
+
+  // 센서 포트 이름: 위치가 등록된 코스는 '포트1 · 퍼팅그린 하'처럼 보여 준다
+  const pn = (name, i) => { const w = ((SENS[name] || {}).ports || [])[i]; return '포트' + (i + 1) + (w ? ' · ' + w : ''); };
 
   /* ---------- 지표 계산 ---------- */
   const STATUS = {
@@ -63,7 +66,7 @@
     r.push(`토양수분 ${f1(m.sLast.vwc)}% — 관측 기간(${f1(m.min)}~${f1(m.max)}%) 중 ${Math.round(m.p * 100)}% 위치${m.st === 'off' ? ` (${md(m.sLast.date)} 기준)` : ''}`);
     r.push(`최근 7일 강수 ${f1(m.rain7)}mm, 증발산 ${f1(m.et7)}mm → 수분수지 ${m.bal7 > 0 ? '+' : ''}${f1(m.bal7)}mm`);
     if (m.dry >= 3) r.push(`${m.dry}일 연속 1mm 이상 비가 없었습니다.`);
-    if (m.st !== 'off' && m.sLast.ports.filter((x) => x != null).length > 1) r.push(`가장 낮은 곳은 센서 포트${m.lowIdx + 1} (${f1(m.sLast.ports[m.lowIdx])}%)`);
+    if (m.st !== 'off' && m.sLast.ports.filter((x) => x != null).length > 1) r.push(`가장 낮은 곳은 ${pn(m.c.name, m.lowIdx)} (${f1(m.sLast.ports[m.lowIdx])}%)`);
     return r;
   };
 
@@ -247,8 +250,8 @@
     root.append(el('section', { class: 'card decide' },
       el('div', null, el('div', { class: 'ch', style: 'margin:0' }, el('span', { class: 'sub' }, `${m.c.name} · 오늘의 판단`), tag(m.S)), el('div', { class: 'big' }, headline), el('ul', { class: 'reasons' }, reasons(m).map((r) => el('li', null, r)))),
       el('div', { class: 'ports' }, el('div', { class: 'sub note' }, `센서 포트별 토양수분 (${md(m.sLast.date)})`),
-        m.sLast.ports.map((v, i) => el('div', { class: 'port num' + (i === m.lowIdx && m.st !== 'ok' ? ' low' : '') }, el('span', null, '포트' + (i + 1)), el('div', { class: 'tr' }, el('b', { style: `width:${v == null ? 0 : Math.min(100, (v / 30) * 100)}%;background:${COLORS[i]}` })), el('span', null, v == null ? '—' : f1(v) + '%'))),
-        el('div', { class: 'note' }, '막대 최대치는 30%입니다. 포트와 홀의 대응은 코스 등록 시 지정합니다.'))));
+        m.sLast.ports.map((v, i) => el('div', { class: 'port num' + (i === m.lowIdx && m.st !== 'ok' ? ' low' : '') }, el('span', { style: 'font-size:.82em' }, pn(m.c.name, i)), el('div', { class: 'tr' }, el('b', { style: `width:${v == null ? 0 : Math.min(100, (v / 30) * 100)}%;background:${COLORS[i]}` })), el('span', null, v == null ? '—' : f1(v) + '%'))),
+        el('div', { class: 'note' }, (SENS[m.c.name] && SENS[m.c.name].map ? '센서 위치: ' + SENS[m.c.name].map + ' · ' : '') + '막대 최대치는 30%입니다.'))));
 
     const last = m.sLast;
     root.append(el('section', { class: 'kpis' },
@@ -261,7 +264,7 @@
     const c1 = el('div', { class: 'card' }), h1 = el('div', { class: 'chart' });
     const ports = [0, 1, 2].filter((i) => soil.some((x) => x.ports[i] != null));
     c1.append(el('div', { class: 'ch' }, el('h2', null, '토양수분 추이'), el('span', { class: 'sub' }, '포트별 · 최근 21일 (%)')), h1,
-      legendStatic([...ports.map((i) => ({ name: '포트' + (i + 1), color: COLORS[i] })), { name: '평균', color: '#1D2A22' }]));
+      legendStatic([...ports.map((i) => ({ name: pn(m.c.name, i), color: COLORS[i] })), { name: '평균', color: '#1D2A22' }]));
     const c2 = el('div', { class: 'card' }), h2 = el('div', { class: 'chart' });
     c2.append(el('div', { class: 'ch' }, el('h2', null, '강수와 증발산'), el('span', { class: 'sub' }, '일별 (mm) · 막대가 선보다 낮으면 물이 줄어드는 날')), h2,
       legendStatic([{ name: '강수량', color: '#2D7BD3', bar: true }, { name: '증발산량(ET0)', color: '#D98E16' }]));
@@ -276,7 +279,7 @@
     const key = `ecm.tasks.${m.c.name}.${m.wLast.date}`, st = store.get(key, { done: {}, custom: [] });
     const auto = [];
     if (m.st === 'off') auto.push({ id: 'sensor', t: '토양센서 전원·통신 점검', n: `${md(m.sLast.date)} 이후 미수신` });
-    if (m.st === 'bad') auto.push({ id: 'irr', t: `센서 포트${m.lowIdx + 1} 주변 분할 관수`, n: `수분 ${f1(m.sLast.ports[m.lowIdx])}% · 한 번에 많이 주기보다 나눠서` });
+    if (m.st === 'bad') auto.push({ id: 'irr', t: `${pn(m.c.name, m.lowIdx)} 주변 분할 관수`, n: `수분 ${f1(m.sLast.ports[m.lowIdx])}% · 한 번에 많이 주기보다 나눠서` });
     if (m.st === 'watch') auto.push({ id: 'chk', t: '건조 의심 구역 현장 확인 후 관수 여부 결정', n: `수분수지 ${f1(m.bal7)}mm` });
     auto.push({ id: 'verify', t: '센서 값과 현장 상태를 대조 (그린 표면 단단함·잔디 시들음)', n: '센서는 한 지점 값입니다' });
     const list = el('ul', { class: 'tasks' });
@@ -300,7 +303,7 @@
     $app.replaceChildren(root);
     const dates = soil.map((x) => x.date);
     const draw = () => {
-      lineChart(h1, { dates, label: '포트별 토양수분', unit: '%', series: [...ports.map((i) => ({ name: '포트' + (i + 1), color: COLORS[i], w: 1.8, vals: soil.map((x) => x.ports[i]) })), { name: '평균', color: '#1D2A22', w: 2.8, dash: '5 4', vals: soil.map((x) => x.vwc) }] });
+      lineChart(h1, { dates, label: '포트별 토양수분', unit: '%', series: [...ports.map((i) => ({ name: pn(m.c.name, i), color: COLORS[i], w: 1.8, vals: soil.map((x) => x.ports[i]) })), { name: '평균', color: '#1D2A22', w: 2.8, dash: '5 4', vals: soil.map((x) => x.vwc) }] });
       rainEtChart(h2, d.slice(-21));
       const dd = d.slice(-21).map((x) => x.date);
       lineChart(h3, { dates: dd, label: '기온과 지온', unit: '℃', series: [{ name: '기온', color: '#C4476B', vals: d.slice(-21).map((x) => x.tmean) }, { name: '지온', color: '#8A5CD0', vals: d.slice(-21).map((x) => x.soilT) }] });
@@ -329,8 +332,8 @@
   window.addEventListener('hashchange', route);
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (DATA) { const y = window.scrollY; route(); window.scrollTo(0, y); } }, 200); });
 
-  fetch('data/courses.json').then((r) => r.json()).then((j) => {
-    DATA = j;
+  Promise.all([fetch('data/courses.json').then((r) => r.json()), fetch('data/sensors.json').then((r) => r.json()).catch(() => ({ courses: {} }))]).then(([j, sj]) => {
+    DATA = j; SENS = sj.courses || {};
     const asof = j.courses.reduce((a, c) => { const l = c.daily[c.daily.length - 1].date; return l > a ? l : a; }, '');
     document.getElementById('asof').textContent = `자료 기준 ${mdw(asof)}`;
     route();

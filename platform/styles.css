@@ -114,7 +114,7 @@ main { max-width: 1240px; margin: 0 auto; padding: 18px 18px calc(40px + env(saf
 .reasons li { padding-left: 18px; position: relative; }
 .reasons li::before { content: ""; position: absolute; left: 2px; top: .6em; width: 7px; height: 7px; border-radius: 50%; background: var(--fairway); }
 .ports { display: grid; gap: 10px; align-content: start; }
-.port { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr) 3.4rem; gap: 10px; align-items: center; font-size: .88rem; }
+.port { display: grid; grid-template-columns: minmax(4.2rem, 9.5rem) minmax(0, 1fr) 3.4rem; gap: 10px; align-items: center; font-size: .88rem; }
 .port .tr { height: 12px; border-radius: 6px; background: var(--off-bg); overflow: hidden; }
 .port .tr b { display: block; height: 100%; border-radius: 6px; }
 .port.low { font-weight: 700; color: var(--bad); }
