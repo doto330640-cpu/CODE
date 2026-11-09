@@ -146,3 +146,26 @@ details.how p { margin: 6px 0; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 @media print { .bar { position: static; } .hero svg.art { display: none; } }
+
+/* 드론 분석 */
+.drs { display: grid; gap: 8px; }
+.dr { display: grid; grid-template-columns: 6.2rem minmax(7rem, 1.1fr) auto auto minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px 14px; align-items: center; text-align: left; width: 100%; border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 10px 14px; }
+.dr:hover { border-color: var(--fairway); }
+.dr > b { font-weight: 800; letter-spacing: -.02em; }
+.dr .tsi { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.dr .tr { position: relative; flex: 1; height: 10px; border-radius: 5px; background: var(--off-bg); }
+.dr .tr b { display: block; height: 100%; border-radius: 5px; }
+.dr .tr i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink2); opacity: .55; }
+.dr .sm, .dr .chg { font-size: .82rem; color: var(--ink2); }
+.gtag { display: inline-block; border-radius: 6px; padding: 1px 9px; font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.hgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; margin-bottom: 8px; }
+.hgrid button { border: 3px solid transparent; border-radius: 10px; padding: 6px 0 4px; display: grid; justify-items: center; line-height: 1.15; }
+.hgrid button b { font-size: 1.05rem; font-weight: 800; }
+.hgrid button small { font-size: .72rem; opacity: .9; }
+.hgrid button[aria-pressed="true"] { border-color: var(--ink); }
+.hdetail { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.zrow { display: grid; grid-template-columns: 4.4rem minmax(0, 1fr) 3rem 5.2rem; gap: 10px; align-items: center; font-size: .88rem; padding: 3px 0; }
+.zrow .tr { height: 10px; border-radius: 5px; background: var(--off-bg); overflow: hidden; }
+.zrow .tr b { display: block; height: 100%; border-radius: 5px; }
+.zrow .dn { color: var(--bad); font-weight: 700; } .zrow .up { color: var(--ok); font-weight: 700; } .zrow .flat { color: var(--mute); }
+@media (max-width: 900px) { .dr { grid-template-columns: 1fr auto; } .dr .tsi { grid-column: 1 / -1; } .dr .sm, .dr .chg { grid-column: 1 / -1; } }

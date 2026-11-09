@@ -5,7 +5,7 @@
   const COLORS = ['#1F7A52', '#2D7BD3', '#D98E16', '#8A5CD0', '#C4476B'];
   const SVG = 'http://www.w3.org/2000/svg';
   const WD = ['일', '월', '화', '수', '목', '금', '토'];
-  let DATA = null, SENS = {},  role = 'exec', teamIdx = 0;
+  let DRONE = { pests: {} }, DATA = null, SENS = {}, DR = {}, selHole = {},  role = 'exec', teamIdx = 0;
   const hidden = new Set(); // 비교 차트에서 숨긴 코스
 
   /* ---------- 유틸 ---------- */
@@ -103,7 +103,8 @@
     if (o.ref != null) { svg.append(s('line', { x1: m.l, x2: W - m.r, y1: y(o.ref), y2: y(o.ref), stroke: '#B8C2B6', 'stroke-dasharray': '4 4' })); }
     o.series.forEach((q) => {
       let dd = '', pen = false;
-      q.vals.forEach((v, i) => { if (v == null) { pen = false; return; } dd += (pen ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); pen = true; });
+      q.vals.forEach((v, i) => { if (v == null) { if (!o.connect) pen = false; return; } dd += (pen ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); pen = true; });
+      if (o.connect) q.vals.forEach((v, i) => { if (v != null) svg.append(s('circle', { cx: x(i), cy: y(v), r: 3, fill: q.color })); });
       svg.append(s('path', { d: dd, fill: 'none', stroke: q.color, 'stroke-width': q.w || 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-dasharray': q.dash || '' }));
     });
     const rule = s('line', { y1: m.t, y2: H - m.b, stroke: '#9AA89C', display: 'none' }); svg.append(rule);
@@ -166,6 +167,22 @@
     return svg;
   }
 
+  /* ---------- 드론 분석 ---------- */
+  const GRADE = { '최상': '#1F7A52', '양호': '#6FA35B', '주의': '#E0A81C', '경고': '#E07A2B', '위험': '#CF3F3F' };
+  const GRADE_DARK = { '최상': 1, '경고': 1, '위험': 1 }; // 흰 글씨가 읽히는 등급
+  const lastOf = (d) => d.trend[d.trend.length - 1];
+  const topRisk = (r, n) => Object.entries(r || {}).sort((a, b) => b[1] - a[1]).slice(0, n || 1);
+  const gtag = (g) => el('span', { class: 'gtag', style: `background:${GRADE[g] || '#8A948D'};color:${GRADE_DARK[g] ? '#fff' : '#1D2A22'}` }, g || '—');
+  // 촬영 조건 때문에 하루 이틀 사이 튀었다가 돌아오는 값(식생지수 ±0.08 이상 급등락 후 반대로 복귀)을 찾는다
+  const spikes = (d) => d.trend.filter((x, i, a) => i > 0 && i < a.length - 1 && x.ndvi != null && Math.abs(x.ndvi - a[i - 1].ndvi) >= 0.08 && Math.abs(a[i + 1].ndvi - x.ndvi) >= 0.08 && (x.ndvi - a[i - 1].ndvi) * (a[i + 1].ndvi - x.ndvi) < 0);
+  const droneNotes = (list) => {
+    const out = [];
+    list.forEach((d) => { const sp = spikes(d); if (sp.length) out.push(`${d.name} ${sp.map((x) => md(x.date) + '(TSI ' + f1(x.tsi) + ')').join('·')}`);
+      const ref = d.trend.filter((x) => x.ref).length; if (ref) out.push(`${d.name} 촬영 ${d.trend.length}회 중 ${ref}회`); });
+    return out;
+  };
+  const sgn = (v, n) => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(n));
+
   /* ---------- 공통 조각 ---------- */
   const tag = (S, text) => el('span', { class: 'tag ' + S.tag }, text || S.label);
   const kpi = (k, v, unit, d, cls) => el('div', { class: 'card kpi ' + (cls || '') }, el('div', { class: 'k' }, k), el('div', { class: 'v num' }, v, unit ? el('small', null, unit) : null), el('div', { class: 'd' }, d || ''));
@@ -188,6 +205,9 @@
     const asof = ms.reduce((a, m) => (m.wLast.date > a ? m.wLast.date : a), '');
     const head = bad.length ? `${bad.map((m) => m.c.name).join('·')} 관수 점검이 필요합니다` : off.length ? `${off.map((m) => m.c.name).join('·')} 센서 수신이 끊겨 있습니다` : watch.length ? `${watch.map((m) => m.c.name).join('·')} 수분 흐름을 주시할 시점입니다` : '전 코스 수분 상태가 안정적입니다';
     const avgBal = ms.reduce((a, m) => a + m.bal7, 0) / ms.length;
+    const drs = ms.map((m) => DR[m.c.name]).filter(Boolean);
+    const drAvg = drs.length ? drs.reduce((a, d) => a + lastOf(d).tsi, 0) / drs.length : 0;
+    const drWorst = drs.slice().sort((a, b) => lastOf(a).tsi - lastOf(b).tsi)[0];
     const root = el('div', { style: 'display:contents' });
     root.append(el('section', { class: 'hero' }, heroArt(), el('div', { class: 'eyebrow' }, `경영 현황 · ${mdw(asof)} 기준`),
       el('h1', null, head),
@@ -197,6 +217,7 @@
     root.append(el('section', { class: 'kpis' },
       kpi('모니터링 코스', String(ms.length), '곳', '센서 연동 코스'),
       kpi('관수 점검', String(bad.length), '곳', bad.length ? bad.map((m) => m.c.name).join(', ') : '해당 없음', bad.length ? 'bad' : 'ok'),
+      kpi('드론 TSI 평균', f1(drAvg), '점', drWorst ? `${drWorst.name} ${f1(lastOf(drWorst).tsi)}점으로 가장 낮음` : '', drAvg < 65 ? 'watch' : ''),
       kpi('센서 이상', String(off.length), '곳', off.length ? off.map((m) => `${m.c.name} ${m.stale}일째`).join(', ') : '전 코스 수신 중', off.length ? 'watch' : 'ok'),
       kpi('7일 수분수지 평균', (avgBal > 0 ? '+' : '') + f1(avgBal), 'mm', '강수 − 증발산, 5개 코스 평균', avgBal < -5 ? 'watch' : '')));
 
@@ -209,6 +230,31 @@
       b.addEventListener('click', () => go('team', i)); return b;
     })));
 
+    if (drs.length) {
+      const asofD = drs.reduce((a, d) => (d.last > a ? d.last : a), '');
+      const rows = drs.slice().sort((a, b) => lastOf(a).tsi - lastOf(b).tsi).map((d) => {
+        const t = lastOf(d), pv = d.trend[d.trend.length - 2], first = d.trend[0], i = ms.findIndex((m) => m.c.name === d.name);
+        const worst = d.holes.slice().sort((a, b) => a.tsi - b.tsi)[0], rk = topRisk(t.risk)[0];
+        const r = el('button', { class: 'dr', type: 'button', 'aria-label': d.name + ' 드론 분석 상세' },
+          el('b', null, d.name),
+          el('div', { class: 'tsi' }, el('div', { class: 'tr' }, el('b', { style: `width:${t.tsi}%;background:${GRADE[t.grade]}` }), el('i', { style: 'left:65%' })), el('span', { class: 'num' }, f1(t.tsi))),
+          gtag(t.grade),
+          el('span', { class: 'num chg' }, `직전 ${sgn(pv ? t.tsi - pv.tsi : null, 1)} · 첫 촬영 ${sgn(t.tsi - first.tsi, 1)}`),
+          el('span', { class: 'sm' }, `식생지수 ${f2(t.ndvi)} · 낮은 면적 ${f1(t.ndviLow)}%`),
+          el('span', { class: 'sm' }, worst ? `가장 낮은 홀 ${worst.hole}번 (${f1(worst.tsi)})` : ''),
+          el('span', { class: 'sm' }, rk ? `병해 ${DRONE.pests[rk[0]] || rk[0]} ${Math.round(rk[1])}` : ''));
+        r.addEventListener('click', () => go('team', i)); return r;
+      });
+      root.append(el('section', { class: 'card' }, el('div', { class: 'ch' }, el('h2', null, '드론 분석 · 코스 상태'), el('span', { class: 'sub' }, `TSI 종합 상태(0~100) · 낮은 순 · 마지막 촬영 ${md(asofD)} · 세로선은 양호 기준 65`)), el('div', { class: 'drs' }, rows),
+        el('p', { class: 'note', style: 'margin:10px 0 0' }, '드론 분석은 코스 전체(그린·티박스·페어웨이) 상태이고, 센서 값은 설치 지점 한 곳의 수분입니다. 두 지표는 보는 범위가 다릅니다. 엽록소 밴드가 없는 촬영이 많아 TSI는 참고값으로 보시고, 식생지수 변화와 함께 판단하세요.')));
+      const th = el('div', { class: 'chart' });
+      const dts = [...new Set(drs.flatMap((d) => d.trend.map((x) => x.date)))].sort();
+      root.append(el('section', { class: 'card' }, el('div', { class: 'ch' }, el('h2', null, 'TSI 추이'), el('span', { class: 'sub' }, '촬영일별 · 점이 촬영 시점 · 점선은 양호 기준 65')), th,
+        el('p', { class: 'note', style: 'margin:0 0 6px' }, (() => { const sp = drs.flatMap((d) => spikes(d).map((x) => `${d.name} ${md(x.date)}(${f1(x.tsi)})`)); return sp.length ? `※ 식생지수가 하루 이틀 사이 ±0.08 이상 튀었다가 돌아온 촬영: ${sp.join(', ')} — 실제 잔디 변화보다 촬영 조건 영향일 수 있어 현장 확인이 필요합니다.` : ''; })()),
+        el('p', { class: 'note', style: 'margin:0 0 6px' }, (() => { const rf = drs.filter((d) => d.trend.some((x) => x.ref)).map((d) => `${d.name} ${d.trend.filter((x) => x.ref).length}/${d.trend.length}회`); return rf.length ? `※ 엽록소 밴드가 없는 촬영은 TSI가 참고값입니다: ${rf.join(', ')}.` : ''; })()),
+        legendStatic(drs.map((d) => ({ name: d.name, color: COLORS[ms.findIndex((m) => m.c.name === d.name)] })))));
+      requestAnimationFrame(() => lineChart(th, { dates: dts, connect: true, min: 40, max: 90, ref: 65, label: '코스별 TSI 추이', unit: '점', series: drs.map((d) => ({ name: d.name, color: COLORS[ms.findIndex((m) => m.c.name === d.name)], vals: dts.map((dt) => (d.trend.find((x) => x.date === dt) || {}).tsi ?? null) })) }));
+    }
     const cmp = el('div', { class: 'card' }), cmpHost = el('div', { class: 'chart' });
     const draw = () => {
       const dates = [...new Set(ms.flatMap((m) => m.d.filter((x) => x.vwc != null).map((x) => x.date)))].sort().slice(-21);
@@ -253,6 +299,30 @@
         m.sLast.ports.map((v, i) => el('div', { class: 'port num' + (i === m.lowIdx && m.st !== 'ok' ? ' low' : '') }, el('span', { style: 'font-size:.82em' }, pn(m.c.name, i)), el('div', { class: 'tr' }, el('b', { style: `width:${v == null ? 0 : Math.min(100, (v / 30) * 100)}%;background:${COLORS[i]}` })), el('span', null, v == null ? '—' : f1(v) + '%'))),
         el('div', { class: 'note' }, (SENS[m.c.name] && SENS[m.c.name].map ? '센서 위치: ' + SENS[m.c.name].map + ' · ' : '') + '막대 최대치는 30%입니다.'))));
 
+    const D = DR[m.c.name];
+    if (D) {
+      const t = lastOf(D), holes = D.holes, sel = selHole[m.c.name] != null ? selHole[m.c.name] : holes.slice().sort((a, b) => a.tsi - b.tsi)[0].hole;
+      const detail = el('div', { class: 'hdetail' }), grid = el('div', { class: 'hgrid', role: 'group', 'aria-label': '홀 선택' });
+      const showDetail = (n) => {
+        selHole[m.c.name] = n; const h = holes.find((x) => x.hole === n);
+        grid.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.h) === n)));
+        const zs = ['그린', '티박스', '페어웨이'].filter((z) => h.zones[z]);
+        const rk = topRisk(Object.assign({}, ...zs.map((z) => (h.zones[z].last || {}).risk || {})), 3).filter((r) => r[1] >= 30);
+        detail.replaceChildren(el('div', { class: 'ch', style: 'margin-bottom:8px' }, el('h2', null, `${h.name}${h.par ? ' · 파' + h.par : ''}`), gtag(h.grade), el('span', { class: 'sub' }, `TSI ${f1(h.tsi)} · ${h.nine} 코스`)),
+          ...zs.map((z) => { const v = h.zones[z], c = v.change; return el('div', { class: 'zrow num' }, el('span', null, z), el('div', { class: 'tr' }, el('b', { style: `width:${Math.min(100, (v.last.ndvi || 0) * 100)}%;background:${(c != null && c <= -0.03) ? '#CF3F3F' : '#1F7A52'}` })), el('span', null, f2(v.last.ndvi)), el('span', { class: c != null && c <= -0.03 ? 'dn' : c != null && c >= 0.03 ? 'up' : 'flat' }, c == null ? '—' : (c > 0 ? '▲' : c < 0 ? '▼' : '–') + ' ' + Math.abs(c).toFixed(3))); }),
+          el('p', { class: 'note', style: 'margin:8px 0 0' }, `식생지수(NDVI) · 변화는 첫 촬영(${md(D.first)}) 대비`),
+          rk.length ? el('p', { class: 'note', style: 'margin:4px 0 0' }, '병해 위험 ', ...rk.map((r) => el('b', { style: 'margin-right:8px' }, `${DRONE.pests[r[0]] || r[0]} ${Math.round(r[1])}`))) : el('p', { class: 'note', style: 'margin:4px 0 0' }, '병해 위험 30 이상 항목 없음'));
+      };
+      holes.forEach((h) => { const b = el('button', { type: 'button', 'data-h': String(h.hole), style: `background:${GRADE[h.grade] || '#8A948D'};color:${GRADE_DARK[h.grade] ? '#fff' : '#1D2A22'}`, 'aria-label': `${h.name} TSI ${h.tsi} ${h.grade}` }, el('b', null, String(h.hole)), el('small', { class: 'num' }, f1(h.tsi))); b.addEventListener('click', () => showDetail(h.hole)); grid.append(b); });
+      const bad = holes.flatMap((h) => Object.entries(h.zones).map(([z, v]) => ({ h, z, c: v.change, n: v.last.ndvi }))).filter((x) => x.c != null && x.c <= -0.03).sort((a, b) => a.c - b.c).slice(0, 5);
+      const worst = el('ol', { class: 'prio' }, bad.length ? bad.map((x, i) => el('li', { class: 'watch' }, el('div', { class: 'n' }, String(i + 1)), el('div', null, el('b', null, `${x.h.hole}번 홀 ${x.z}`), el('span', { class: 'r num' }, `식생지수 ${f2(x.n)} (첫 촬영 대비 ${sgn(x.c, 3)})`)), (() => { const b = el('button', { class: 'link', type: 'button' }, '보기'); b.addEventListener('click', () => { showDetail(x.h.hole); grid.scrollIntoView({ block: 'center' }); }); return b; })())) : [el('li', { class: 'ok' }, el('div', { class: 'n' }, '✓'), el('div', null, el('b', null, '눈에 띄게 나빠진 구역이 없습니다'), el('span', { class: 'r' }, '식생지수 하락 0.03 이상 기준')), el('span'))]);
+      const lg = el('div', { class: 'legend' }, Object.keys(GRADE).map((g) => el('span', { style: 'display:inline-flex;align-items:center;gap:6px' }, el('i', { style: `width:12px;height:12px;border-radius:3px;background:${GRADE[g]}` }), g)));
+      root.append(el('section', { class: 'grid g2' },
+        el('div', { class: 'card' }, el('div', { class: 'ch' }, el('h2', null, '홀별 현황 (드론)'), el('span', { class: 'sub' }, `홀 TSI · 마지막 촬영 ${md(D.last)} · 코스 전체 ${f1(t.tsi)}`), el('span', { class: 'end' }, gtag(t.grade))), grid, lg, detail),
+        el('div', { class: 'card' }, el('div', { class: 'ch' }, el('h2', null, '나빠지는 구역'), el('span', { class: 'sub' }, '첫 촬영 대비 식생지수 하락 큰 순')), worst,
+          el('p', { class: 'note', style: 'margin:10px 0 0' }, `드론 촬영은 ${md(D.first)}~${md(D.last)}(${D.trend.length}회)이며, 센서 값(${md(m.sLast.date)})보다 일찍 끝납니다.`))));
+      showDetail(sel);
+    }
     const last = m.sLast;
     root.append(el('section', { class: 'kpis' },
       kpi('토양수분 평균', f1(last.vwc), '%', `${md(last.date)} · 7일 ${m.delta >= 0 ? '+' : ''}${f1(m.delta)}`, m.st === 'bad' ? 'bad' : m.st === 'watch' ? 'watch' : ''),
@@ -332,8 +402,8 @@
   window.addEventListener('hashchange', route);
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (DATA) { const y = window.scrollY; route(); window.scrollTo(0, y); } }, 200); });
 
-  Promise.all([fetch('data/courses.json').then((r) => r.json()), fetch('data/sensors.json').then((r) => r.json()).catch(() => ({ courses: {} }))]).then(([j, sj]) => {
-    DATA = j; SENS = sj.courses || {};
+  Promise.all([fetch('data/courses.json').then((r) => r.json()), fetch('data/sensors.json').then((r) => r.json()).catch(() => ({ courses: {} })), fetch('data/drone.json').then((r) => r.json()).catch(() => ({ courses: [], pests: {} }))]).then(([j, sj, dj]) => {
+    DATA = j; SENS = sj.courses || {}; DRONE = dj; dj.courses.forEach((c) => { DR[c.name] = c; });
     const asof = j.courses.reduce((a, c) => { const l = c.daily[c.daily.length - 1].date; return l > a ? l : a; }, '');
     document.getElementById('asof').textContent = `자료 기준 ${mdw(asof)}`;
     route();
