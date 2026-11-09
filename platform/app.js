@@ -5,7 +5,7 @@
   const COLORS = ['#1F7A52', '#2D7BD3', '#D98E16', '#8A5CD0', '#C4476B'];
   const SVG = 'http://www.w3.org/2000/svg';
   const WD = ['일', '월', '화', '수', '목', '금', '토'];
-  let DRONE = { pests: {} }, DATA = null, SENS = {}, DR = {}, selHole = {},  role = 'exec', teamIdx = 0;
+  let DRONE = { pests: {} }, WX = {}, DATA = null, SENS = {}, DR = {}, selHole = {},  role = 'exec', teamIdx = 0;
   const hidden = new Set(); // 비교 차트에서 숨긴 코스
 
   /* ---------- 유틸 ---------- */
@@ -62,7 +62,7 @@
   }
   const reasons = (m) => {
     const r = [];
-    if (m.st === 'off') r.push(`토양센서 값이 ${md(m.sLast.date)} 이후 들어오지 않습니다 (${m.stale}일째). 먼저 전원·통신을 확인하세요.`);
+    if (m.st === 'off') r.push((SENS[m.c.name] || {}).outage || `토양센서 값이 ${md(m.sLast.date)} 이후 들어오지 않습니다 (${m.stale}일째). 먼저 전원·통신을 확인하세요.`);
     r.push(`토양수분 ${f1(m.sLast.vwc)}% — 관측 기간(${f1(m.min)}~${f1(m.max)}%) 중 ${Math.round(m.p * 100)}% 위치${m.st === 'off' ? ` (${md(m.sLast.date)} 기준)` : ''}`);
     r.push(`최근 7일 강수 ${f1(m.rain7)}mm, 증발산 ${f1(m.et7)}mm → 수분수지 ${m.bal7 > 0 ? '+' : ''}${f1(m.bal7)}mm`);
     if (m.dry >= 3) r.push(`${m.dry}일 연속 1mm 이상 비가 없었습니다.`);
@@ -167,6 +167,15 @@
     return svg;
   }
 
+  /* ---------- 센서 이후 기상 (ECM 연계 일별날씨, 현장 센서와 출처가 달라 따로 표시) ---------- */
+  const nextDay = (s0) => { const d = dObj(s0); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  function wxAfter(m) {
+    const all = WX[m.c.name] || [], rows = all.filter((x) => x.date >= nextDay(m.wLast.date));
+    if (!rows.length) return null;
+    const r7 = rows.slice(-7), rain = sum(rows.map((x) => x.rain)), et0 = sum(rows.map((x) => x.et0));
+    return { rows, from: rows[0].date, to: rows[rows.length - 1].date, rain, et0, bal: rain - et0, bal7: sum(r7.map((x) => x.rain)) - sum(r7.map((x) => x.et0)), t7: sum(r7.map((x) => x.tmean)) / r7.length };
+  }
+
   /* ---------- 드론 분석 ---------- */
   const GRADE = { '최상': '#1F7A52', '양호': '#6FA35B', '주의': '#E0A81C', '경고': '#E07A2B', '위험': '#CF3F3F' };
   const GRADE_DARK = { '최상': 1, '경고': 1, '위험': 1 }; // 흰 글씨가 읽히는 등급
@@ -209,9 +218,9 @@
     const drAvg = drs.length ? drs.reduce((a, d) => a + lastOf(d).tsi, 0) / drs.length : 0;
     const drWorst = drs.slice().sort((a, b) => lastOf(a).tsi - lastOf(b).tsi)[0];
     const root = el('div', { style: 'display:contents' });
-    root.append(el('section', { class: 'hero' }, heroArt(), el('div', { class: 'eyebrow' }, `경영 현황 · ${mdw(asof)} 기준`),
+    root.append(el('section', { class: 'hero' }, heroArt(), el('div', { class: 'eyebrow' }, `경영 현황 · 센서 ${mdw(asof)} 기준`),
       el('h1', null, head),
-      el('p', null, `${ms.length}개 코스 센서 자료를 한 화면에서 비교합니다. 코스를 누르면 팀장 화면으로 이어집니다.`),
+      el('p', null, `${ms.length}개 코스를 한 화면에서 비교합니다. 센서 판정은 ${md(asof)} 자료 기준이며, 그 이후 기상은 아래 카드에서 확인하세요.`),
       el('div', { class: 'chips' }, [`관수 점검 ${bad.length}곳`, `주의 ${watch.length}곳`, `센서 중단 ${off.length}곳`, `양호 ${by('ok').length}곳`].map((t) => el('span', null, t)))));
 
     root.append(el('section', { class: 'kpis' },
@@ -230,6 +239,14 @@
       b.addEventListener('click', () => go('team', i)); return b;
     })));
 
+    const wxs = ms.map((m) => ({ m, w: wxAfter(m) })).filter((x) => x.w);
+    if (wxs.length) {
+      const f0 = wxs[0].w.from, t0 = wxs[0].w.to;
+      root.append(el('section', { class: 'card' }, el('div', { class: 'ch' }, el('h2', null, `센서 이후 기상 (${md(f0)}~${md(t0)})`), el('span', { class: 'sub' }, 'ECM 연계 일별날씨 · 현장 센서와 출처가 달라 강수량 값이 다를 수 있음')),
+        el('div', { class: 'wxs' }, el('div', { class: 'wxr wxh' }, el('span', null, '코스'), el('span', null, '강수 합'), el('span', null, '증발산 합'), el('span', null, '수분수지'), el('span', null, '최근 7일 수지'), el('span', null, '최근 7일 기온')),
+          wxs.slice().sort((a, b) => a.w.bal7 - b.w.bal7).map(({ m, w }) => { const b = el('button', { class: 'wxr num', type: 'button' }, el('b', null, m.c.name), el('span', null, f1(w.rain) + 'mm'), el('span', null, f1(w.et0) + 'mm'), el('span', { class: w.bal < 0 ? 'dn' : 'up' }, sgn(w.bal, 1)), el('span', { class: w.bal7 < 0 ? 'dn' : 'up' }, sgn(w.bal7, 1) + 'mm'), el('span', null, f1(w.t7) + '℃')); b.addEventListener('click', () => go('team', ms.indexOf(m))); return b; })),
+        el('p', { class: 'note', style: 'margin:10px 0 0' }, `위 코스별 "관수 점검·주의" 판정은 센서 ${md(asof)} 자료 기준입니다. 이후 강수가 증발산을 넘은 코스는 수분이 회복됐을 수 있으니, 토양센서 자료를 갱신한 뒤 다시 판정하세요.`)));
+    }
     if (drs.length) {
       const asofD = drs.reduce((a, d) => (d.last > a ? d.last : a), '');
       const rows = drs.slice().sort((a, b) => lastOf(a).tsi - lastOf(b).tsi).map((d) => {
@@ -299,6 +316,15 @@
         m.sLast.ports.map((v, i) => el('div', { class: 'port num' + (i === m.lowIdx && m.st !== 'ok' ? ' low' : '') }, el('span', { style: 'font-size:.82em' }, pn(m.c.name, i)), el('div', { class: 'tr' }, el('b', { style: `width:${v == null ? 0 : Math.min(100, (v / 30) * 100)}%;background:${COLORS[i]}` })), el('span', null, v == null ? '—' : f1(v) + '%'))),
         el('div', { class: 'note' }, (SENS[m.c.name] && SENS[m.c.name].map ? '센서 위치: ' + SENS[m.c.name].map + ' · ' : '') + '막대 최대치는 30%입니다.'))));
 
+    const W = wxAfter(m);
+    if (W) {
+      const wh = el('div', { class: 'chart' });
+      root.append(el('section', { class: 'card' }, el('div', { class: 'ch' }, el('h2', null, `센서 이후 기상 (${md(W.from)}~${md(W.to)})`), el('span', { class: 'sub' }, 'ECM 연계 일별날씨 · 현장 센서와 출처가 다름')),
+        el('div', { class: 'kpis', style: 'margin-bottom:10px' }, kpi('기간 강수', f1(W.rain), 'mm', `${W.rows.length}일`), kpi('기간 증발산', f1(W.et0), 'mm', '기준 증발산량'), kpi('기간 수분수지', sgn(W.bal, 1), 'mm', W.bal < 0 ? '증발산이 많음' : '강수가 많음', W.bal < -10 ? 'bad' : ''), kpi('최근 7일 수지', sgn(W.bal7, 1), 'mm', `평균 ${f1(W.t7)}℃`, W.bal7 < -10 ? 'bad' : '')),
+        wh, legendStatic([{ name: '강수량', color: '#2D7BD3', bar: true }, { name: '증발산량(ET0)', color: '#D98E16' }]),
+        el('p', { class: 'note', style: 'margin:8px 0 0' }, `오늘의 판단은 센서 ${md(m.sLast.date)} 자료 기준입니다. 센서 자료가 갱신되기 전까지는 이 기상 흐름을 함께 보고 현장에서 확인하세요.`)));
+      requestAnimationFrame(() => rainEtChart(wh, W.rows.slice(-30)));
+    }
     const D = DR[m.c.name];
     if (D) {
       const t = lastOf(D), holes = D.holes, sel = selHole[m.c.name] != null ? selHole[m.c.name] : holes.slice().sort((a, b) => a.tsi - b.tsi)[0].hole;
@@ -346,7 +372,7 @@
     root.append(el('section', { class: 'grid g2' }, c1, c2, c3, c4));
 
     /* 오늘 작업 */
-    const key = `ecm.tasks.${m.c.name}.${m.wLast.date}`, st = store.get(key, { done: {}, custom: [] });
+    const tkDate = W ? W.to : m.wLast.date, key = `ecm.tasks.${m.c.name}.${tkDate}`, st = store.get(key, { done: {}, custom: [] });
     const auto = [];
     if (m.st === 'off') auto.push({ id: 'sensor', t: '토양센서 전원·통신 점검', n: `${md(m.sLast.date)} 이후 미수신` });
     if (m.st === 'bad') auto.push({ id: 'irr', t: `${pn(m.c.name, m.lowIdx)} 주변 분할 관수`, n: `수분 ${f1(m.sLast.ports[m.lowIdx])}% · 한 번에 많이 주기보다 나눠서` });
@@ -367,7 +393,7 @@
     const inp = el('input', { type: 'text', placeholder: '오늘 할 일을 직접 추가 (예: 3번홀 그린 롤링)', 'aria-label': '작업 직접 추가', maxlength: '60' });
     const add = () => { const t = inp.value.trim(); if (!t) return; st.custom.push({ id: 'c' + Date.now(), t }); inp.value = ''; saveSt(); drawTasks(); };
     const addBtn = el('button', { class: 'btn', type: 'button' }, '추가'); addBtn.addEventListener('click', add); inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') add(); });
-    root.append(el('section', { class: 'card' }, el('div', { class: 'ch' }, el('h2', null, '오늘 작업'), el('span', { class: 'sub' }, `${mdw(m.wLast.date)} · 체크 내용은 이 기기에 저장됩니다`)), list, el('div', { class: 'addrow' }, inp, addBtn), el('div', { style: 'margin-top:12px' }, howto())));
+    root.append(el('section', { class: 'card' }, el('div', { class: 'ch' }, el('h2', null, '오늘 작업'), el('span', { class: 'sub' }, `${mdw(tkDate)} · 체크 내용은 이 기기에 저장됩니다`)), list, el('div', { class: 'addrow' }, inp, addBtn), el('div', { style: 'margin-top:12px' }, howto())));
     drawTasks();
 
     $app.replaceChildren(root);
@@ -402,10 +428,12 @@
   window.addEventListener('hashchange', route);
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (DATA) { const y = window.scrollY; route(); window.scrollTo(0, y); } }, 200); });
 
-  Promise.all([fetch('data/courses.json').then((r) => r.json()), fetch('data/sensors.json').then((r) => r.json()).catch(() => ({ courses: {} })), fetch('data/drone.json').then((r) => r.json()).catch(() => ({ courses: [], pests: {} }))]).then(([j, sj, dj]) => {
+  Promise.all([fetch('data/courses.json').then((r) => r.json()), fetch('data/sensors.json').then((r) => r.json()).catch(() => ({ courses: {} })), fetch('data/drone.json').then((r) => r.json()).catch(() => ({ courses: [], pests: {} })), fetch('data/weather.json').then((r) => r.json()).catch(() => ({ courses: [] }))]).then(([j, sj, dj, wj]) => {
+    wj.courses.forEach((c) => { WX[c.name] = c.daily; });
     DATA = j; SENS = sj.courses || {}; DRONE = dj; dj.courses.forEach((c) => { DR[c.name] = c; });
     const asof = j.courses.reduce((a, c) => { const l = c.daily[c.daily.length - 1].date; return l > a ? l : a; }, '');
-    document.getElementById('asof').textContent = `자료 기준 ${mdw(asof)}`;
+    const wxEnd = Object.values(WX).reduce((a, d) => (d.length && d[d.length - 1].date > a ? d[d.length - 1].date : a), '');
+    document.getElementById('asof').textContent = `센서 ${md(asof)} · 기상 ${wxEnd ? md(wxEnd) : md(asof)}`;
     route();
   }).catch(() => { $app.replaceChildren(el('div', { class: 'card empty' }, '데이터를 불러오지 못했습니다. 연결을 확인한 뒤 새로고침하세요.')); });
 })();

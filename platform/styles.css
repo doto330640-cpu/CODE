@@ -169,3 +169,12 @@ details.how p { margin: 6px 0; }
 .zrow .tr b { display: block; height: 100%; border-radius: 5px; }
 .zrow .dn { color: var(--bad); font-weight: 700; } .zrow .up { color: var(--ok); font-weight: 700; } .zrow .flat { color: var(--mute); }
 @media (max-width: 900px) { .dr { grid-template-columns: 1fr auto; } .dr .tsi { grid-column: 1 / -1; } .dr .sm, .dr .chg { grid-column: 1 / -1; } }
+
+/* 센서 이후 기상 */
+.wxs { display: grid; gap: 6px; }
+.wxr { display: grid; grid-template-columns: 6.2rem repeat(5, minmax(0, 1fr)); gap: 10px; align-items: center; text-align: left; border: 1px solid var(--line); border-radius: 10px; background: var(--card); padding: 8px 14px; font-size: .9rem; width: 100%; }
+button.wxr:hover { border-color: var(--fairway); }
+.wxr.wxh { border: 0; background: none; color: var(--mute); font-size: .78rem; padding-block: 0; }
+.wxr b { font-weight: 800; }
+.wxr .dn { color: var(--bad); font-weight: 700; } .wxr .up { color: var(--ok); font-weight: 700; }
+@media (max-width: 760px) { .wxr { grid-template-columns: 5rem repeat(3, minmax(0, 1fr)); font-size: .82rem; gap: 6px 8px; } .wxr span:nth-child(5), .wxr span:nth-child(6) { display: none; } }
